@@ -558,7 +558,7 @@
     const panel = document.getElementById('messagesPanel');
     panel.innerHTML = messages.map(m => `
       <div class="msg ${m.role === 'assistant' ? 'bot' : 'user'}">
-        <div class="msg-avatar ${m.role === 'assistant' ? 'bot' : 'usr'}">${m.role === 'assistant' ? 'A' : 'U'}</div>
+        <div class="msg-avatar ${m.role === 'assistant' ? 'bot' : 'usr'}" style="${m.role === 'assistant' ? 'background:transparent;border:none;overflow:hidden' : ''}">${m.role === 'assistant' ? `<img src="https://kalupur.bank.in/wp-content/uploads/2023/02/robot-chatbot-icon-sign-free-vector.webp" style="width:100%;height:100%;object-fit:cover;border-radius:50%" alt="AI" />` : 'U'}</div>
         <div class="msg-body">
           <div class="msg-bubble">${escapeHtml(m.content || m.text || '').replace(/\n/g, '<br>')}</div>
         </div>
@@ -567,7 +567,7 @@
     if (showTyping) {
       panel.innerHTML += `
         <div class="typing-wrap">
-          <div class="msg-avatar bot">A</div>
+<div class="msg-avatar bot" style="background:transparent;border:none;overflow:hidden"><img src="https://kalupur.bank.in/wp-content/uploads/2023/02/robot-chatbot-icon-sign-free-vector.webp" style="width:100%;height:100%;object-fit:cover;border-radius:50%" alt="AI" /></div>
           <div class="typing-bubble">
             <div class="dot"></div><div class="dot"></div><div class="dot"></div>
           </div>
@@ -613,8 +613,8 @@
       </div>`;
     panel.innerHTML += `
       <div class="typing-wrap">
-        <div class="msg-avatar bot">A</div>
-        <div class="typing-bubble">
+          <div class="msg-avatar bot" style="background:transparent;border:none;overflow:hidden"><img src="https://kalupur.bank.in/wp-content/uploads/2023/02/robot-chatbot-icon-sign-free-vector.webp" style="width:100%;height:100%;object-fit:cover;border-radius:50%" alt="AI" /></div>
+          <div class="typing-bubble">
           <div class="dot"></div><div class="dot"></div><div class="dot"></div>
         </div>
       </div>`;
