@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Chatbot with Memory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+
+</head>
+<body>
+  <div class="app">
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="user-profile" id="userProfile">
+          <img class="user-avatar" id="userAvatar" src="" alt="">
+          <div class="user-info">
+            <span class="user-name" id="userName"></span>
+            <span class="user-email" id="userEmail"></span>
+          </div>
+        </div>
+        <button class="btn-new-chat" id="newChatSidebarBtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          New Chat
+        </button>
+      </div>
+      <div class="conversation-list" id="conversationList"></div>
+      <div class="sidebar-footer">
+        <button class="btn-logout" id="logoutBtn">Sign out</button>
+      </div>
+    </div>
+
+    <div class="main-panel">
+      <header class="header">
+        <div class="header-content">
+          <div class="header-left">
+            <button class="btn-icon menu-btn" id="menuBtn" title="Toggle sidebar">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 12h18M3 6h18M3 18h18"/>
+              </svg>
+            </button>
+            <div class="logo">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              </svg>
+            </div>
+            <div>
+              <h1>AI Chatbot</h1>
+              <span class="subtitle">with memory</span>
+            </div>
+          </div>
+          <div class="header-right">
+            <div class="user-badge hidden" id="userBadge">
+              <img class="badge-avatar" id="badgeAvatar" src="" alt="">
+              <span class="badge-name" id="badgeName"></span>
+            </div>
+            <button class="btn-icon" id="googleSignInBtn" title="Sign in with Google">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+            </button>
+            <button class="btn-icon" id="statsBtn" title="Conversation stats">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main class="chat-area" id="chatArea">
+        <div class="login-prompt" id="loginPrompt">
+          <div class="welcome-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
+          </div>
+          <h2>Welcome to AI Chatbot</h2>
+          <p>Sign in with Google to start chatting. Your conversations are saved and remembered across sessions.</p>
+          <div class="login-button-wrapper" id="googleSignInPrompt"></div>
+        </div>
+        <div class="chat-view hidden" id="chatView">
+          <div class="welcome" id="welcome">
+            <div class="welcome-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <h2>Start a conversation</h2>
+            <p>I remember our entire chat — ask me anything!</p>
+          </div>
+          <div class="messages" id="messages"></div>
+          <div class="typing-indicator hidden" id="typingIndicator">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+        </div>
+      </main>
+
+      <footer class="input-area hidden" id="inputArea">
+        <div class="input-wrapper">
+          <input
+            type="text"
+            id="messageInput"
+            placeholder="Type your message..."
+            autofocus
+          />
+          <button class="btn-mic" id="micBtn" title="Voice input">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="2" width="6" height="11" rx="3"/>
+              <path d="M5 10a7 7 0 0 0 14 0"/>
+              <path d="M12 19v3"/>
+            </svg>
+          </button>
+          <button class="btn-send" id="sendBtn" disabled>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+            </svg>
+          </button>
+        </div>
+      </footer>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="statsModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Conversation Stats</h3>
+        <button class="btn-icon" id="closeStatsBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="stat-row">
+          <span class="stat-label">Messages</span>
+          <span class="stat-value" id="statMessages">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Tokens used</span>
+          <span class="stat-value" id="statTokens">0</span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-label">Max tokens</span>
+          <span class="stat-value" id="statMaxTokens">4000</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

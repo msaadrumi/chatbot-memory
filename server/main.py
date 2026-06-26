@@ -1,11 +1,11 @@
-import asyncio
 import uuid
-import time
+from pathlib import Path
 from typing import Optional
 
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 app = FastAPI(title="Offline Chatbot API")
@@ -23,11 +23,13 @@ MAX_TOKENS = 512
 SYSTEM_PROMPT = "You are a helpful, friendly assistant. Keep responses concise."
 
 sessions: dict[str, list[dict]] = {}
+conversations: dict[str, dict] = {}
 
 
 class ChatRequest(BaseModel):
     message: str
     session_id: Optional[str] = None
+    conversation_id: Optional[str] = None
 
 
 class ResetRequest(BaseModel):
@@ -65,15 +67,14 @@ def fallback_reply(message: str) -> str:
     if any(w in msg_lower for w in ["bye", "goodbye", "see you"]):
         return "Goodbye! Feel free to come back anytime."
     if any(w in msg_lower for w in ["how are you", "how's it going"]):
-        return "I'm doing great, thanks for asking! How can I assist you?"
+        return "I'm doing great! How can I help you?"
     if "?" in message:
-        return "That's a great question! Unfortunately, I'm running in offline mode without a full language model loaded."
+        return "That's a great question! Let me think about it."
     if any(w in msg_lower for w in ["thanks", "thank you"]):
-        return "You're welcome! Happy to help."
+        return "You're welcome!"
     if any(w in msg_lower for w in ["help", "what can you do"]):
-        return "I'm an offline chatbot. You can ask me questions, chat with me, or type /new to start a new conversation."
-
-    return f"I received your message: '{message}'. I'm running in offline mode. To get more intelligent responses, make sure Ollama is running with a model loaded."
+        return "I'm an offline chatbot. You can ask me anything, or type /new to start a new conversation."
+    return f"You said: '{message}'. I'm running in offline mode."
 
 
 def count_tokens(text: str) -> int:
@@ -86,10 +87,70 @@ def get_session(session_id: str) -> list[dict]:
     return sessions[session_id]
 
 
+@app.post("/api/auth/google")
+async def auth_google():
+    user_id = str(uuid.uuid4())
+    return {
+        "id": user_id,
+        "name": "Local User",
+        "email": "local@offline.chat",
+        "picture": "",
+        "conversations": [
+            {"id": cid, "title": c["title"]}
+            for cid, c in conversations.items()
+        ],
+    }
+
+
+@app.get("/api/conversations")
+async def list_conversations():
+    return {
+        "conversations": [
+            {"id": cid, "title": c["title"]}
+            for cid, c in conversations.items()
+        ]
+    }
+
+
+@app.post("/api/conversations")
+async def create_conversation():
+    cid = str(uuid.uuid4())
+    conversations[cid] = {
+        "id": cid,
+        "title": "New Chat",
+        "messages": [{"role": "system", "content": SYSTEM_PROMPT}],
+    }
+    return {"conversation_id": cid}
+
+
+@app.get("/api/conversations/{conv_id}")
+async def get_conversation(conv_id: str):
+    conv = conversations.get(conv_id)
+    if not conv:
+        raise HTTPException(status_code=404, detail="Conversation not found")
+    return conv
+
+
 @app.post("/api/chat")
 async def chat(req: ChatRequest):
-    session_id = req.session_id or str(uuid.uuid4())
-    history = get_session(session_id)
+    conv_id = req.conversation_id
+    session_id = req.session_id
+
+    if conv_id:
+        conv = conversations.get(conv_id)
+        if not conv:
+            conv = {
+                "id": conv_id,
+                "title": "New Chat",
+                "messages": [{"role": "system", "content": SYSTEM_PROMPT}],
+            }
+            conversations[conv_id] = conv
+        history = conv["messages"]
+        conv_id = conv["id"]
+    else:
+        session_id = session_id or str(uuid.uuid4())
+        history = get_session(session_id)
+        conv_id = session_id
 
     history.append({"role": "user", "content": req.message})
 
@@ -101,18 +162,25 @@ async def chat(req: ChatRequest):
         else:
             reply = fallback_reply(req.message)
             source = "fallback"
-    except Exception as e:
+    except Exception:
         reply = fallback_reply(req.message)
         source = "fallback"
 
     history.append({"role": "assistant", "content": reply})
+
+    if conv_id in conversations:
+        title = req.message[:50].strip()
+        if len(title) > 30:
+            title = title[:30] + "..."
+        conversations[conv_id]["title"] = title
 
     msg_count = sum(1 for m in history if m["role"] in ("user", "assistant"))
     token_count = sum(count_tokens(m["content"]) for m in history)
 
     return {
         "reply": reply,
-        "session_id": session_id,
+        "conversation_id": conv_id,
+        "session_id": conv_id if not req.conversation_id else None,
         "messages": msg_count,
         "tokens": token_count,
         "max_tokens": MAX_TOKENS,
@@ -123,12 +191,17 @@ async def chat(req: ChatRequest):
 @app.post("/api/reset")
 async def reset(req: ResetRequest):
     sessions.pop(req.session_id, None)
+    conversations.pop(req.session_id, None)
     return {"status": "ok"}
 
 
 @app.get("/api/stats/{session_id}")
 async def stats(session_id: str):
     history = sessions.get(session_id)
+    if not history:
+        conv = conversations.get(session_id)
+        if conv:
+            history = conv["messages"]
     if not history:
         raise HTTPException(status_code=404, detail="Session not found")
     msg_count = sum(1 for m in history if m["role"] in ("user", "assistant"))
@@ -149,6 +222,10 @@ async def health():
         "model": MODEL if ollama_ok else None,
     }
 
+
+frontend_path = Path(__file__).resolve().parent.parent / "frontend"
+if frontend_path.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_path), html=True), name="frontend")
 
 if __name__ == "__main__":
     import uvicorn
